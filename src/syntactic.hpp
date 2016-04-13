@@ -1,12 +1,15 @@
 #ifndef SYNTACTIC
 #define SYNTACTIC
+
 #include <iostream>
 #include "lexic.hpp"
+#include "node.hpp"
 
 class Syntactic {
 
   public:
     Syntactic(Lexic*);
+    Node* tree;
 
   private:
     Lexic* lexic;
@@ -18,40 +21,40 @@ class Syntactic {
 
     void Error();
 
-    void Translation_Unit();
-    void External_Declaration();
-    void _External_Declaration();
-    void Specifier();
-    void Parameter_List();
-    void _Parameter_List();
-    void Compound_S();
-    void _Compound_S();
-    void Initializer();
-    void _Initializer();
-    void Declaration_List();
-    void Declarator();
-    void Statement_List();
-    void Expression_S();
-    void Selection_S();
-    void _Selection_S();
-    void Iteration_S();
-    void For_S();
-    void _For_S();
-    void Jump_S();
-    void Expression();
-    void EQ();
-    void OP();
-    void _OP();
-    void ROP();
-    void _ROP();
-    void E();
-    void _E();
-    void T();
-    void _T();
-    void F();
-    void FD();
-    void F_List();
-    void _F_List();
-    void _RR();
+    Node* Translation_Unit();
+    Node* External_Declaration();
+    Node* _External_Declaration();
+    Node* Specifier();
+    Node* Parameter_List();
+    Node* _Parameter_List();
+    Node* Compound_S();
+    Node* _Compound_S();
+    Node* Initializer();
+    Node* _Initializer();
+    Node* Declaration_List();
+    Node* Declarator();
+    Node* Statement_List();
+    Node* Expression_S();
+    Node* Selection_S();
+    Node* _Selection_S();
+    Node* Iteration_S();
+    Node* For_S();
+    Node* _For_S();
+    Node* Jump_S();
+    Node* Expression();
+    Node* EQ();
+    Node* OP();
+    Node* _OP();
+    Node* ROP();
+    Node* _ROP();
+    Node* E();
+    Node* _E();
+    Node* T();
+    Node* _T();
+    Node* F();
+    Node* FD();
+    Node* F_List();
+    Node* _F_List();
+    Node* _RR();
 };
 #endif

@@ -6,86 +6,110 @@ Syntactic::Syntactic(Lexic* lex) {
 }
 
 void Syntactic::Analize() {
-    Translation_Unit();
+    tree = Translation_Unit();
 }
 
-void Syntactic::Translation_Unit() {
+Node* Syntactic::Translation_Unit() {
+    Node* nodent = new NodeNT("translation_unit", Token::TRANSLATION_UNIT);
     while( lexic->Token != Token::END_OF_FILE)
-        External_Declaration();
+        nodent->push(External_Declaration());
+    return nodent;
 }
 
-void Syntactic::External_Declaration() {
-    Specifier();
+Node* Syntactic::External_Declaration() {
+    Node* nodent = new NodeNT("external_declaration", Token::EXTERNAL_DECLARATION);
+    nodent->push(Specifier());
+    nodent->push(new NodeT(lexic->Symbol,lexic->Token));
     Check(Token::IDENTIFIER);
-    _External_Declaration();
+    nodent->push(_External_Declaration());
+    return nodent;
 }
 
-void Syntactic::Specifier() {
+Node* Syntactic::Specifier() {
+    Node* nodent = new NodeNT("specifier", Token::SPECIFIER);
     if (lexic->Token == Token::INT || lexic->Token == Token::VOID) {
+        nodent->push(new NodeT(lexic->Symbol,lexic->Token));
         lexic->Next();
-        return;
     } else
         Error();
+    return nodent;
 }
 
-void Syntactic::_External_Declaration() {
+Node* Syntactic::_External_Declaration() {
+    Node* nodent = new NodeNT("_external_declaration", Token::_EXTERNAL_DECLARATION);
     if (lexic->Token == Token::PARENTHESES_O) {
         lexic->Next();
         if (lexic->Token != Token::PARENTHESES_C)
-            Parameter_List();
+            nodent->push(Parameter_List());
         Check(")");
-        Compound_S();
+        nodent->push(Compound_S());
     } else{
-        _Initializer();
-        Initializer();
+        nodent->push(_Initializer());
+        nodent->push(Initializer());
     }
+    return nodent;
 }
 
-void Syntactic::Parameter_List() {
-    Specifier();
+Node* Syntactic::Parameter_List() {
+    Node* nodent = new NodeNT("parameter_list", Token::PARAMETER_LIST);
+    nodent->push(Specifier());
+    nodent->push(new NodeT(lexic->Symbol,lexic->Token));
     Check(Token::IDENTIFIER);
-    _Parameter_List();
+    nodent->push(_Parameter_List());
+    return nodent;
 }
 
-void Syntactic::_Parameter_List() {
+Node* Syntactic::_Parameter_List() {
+    Node* nodent = new NodeNT("_parameter_list", Token::_PARAMETER_LIST);
     if (lexic->Token == Token::COMMA) {
         lexic->Next();
-        Specifier();
+        nodent->push(Specifier());
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         Check(Token::IDENTIFIER);
-        _Parameter_List();
+        nodent->push(_Parameter_List());
     }
+    return nodent;
 }
 
-void Syntactic::Initializer() {
+Node* Syntactic::Initializer() {
+    Node* nodent = new NodeNT("initializer", Token::INITIALIZER);
     if (lexic->Token == Token::COMMA) {
         lexic->Next();
+        nodent->push(new NodeT(lexic->Symbol,lexic->Token));
         Check(Token::IDENTIFIER);
-        _Initializer();
-        Initializer();
+        nodent->push(_Initializer());
+        nodent->push(Initializer());
     }
+    return nodent;
 }
 
-void Syntactic::_Initializer() {
+Node* Syntactic::_Initializer() {
+    Node* nodent = new NodeNT("_initializer", Token::_INITIALIZER);
     if (lexic->Token == Token::EQUAL) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
-        Expression();
+        nodent->push(Expression());
     }
+    return nodent;
 }
 
-void Syntactic::Compound_S() {
+Node* Syntactic::Compound_S() {
+    Node* nodent = new NodeNT("compound_s", Token::COMPOUND_S);
     if (lexic->Token == Token::BRACE_O) {
         lexic->Next();
-        _Compound_S();
+        nodent->push(_Compound_S());
         Check("}");
     } else {
         Check(";");
     }
+    return nodent;
 }
 
-void Syntactic::_Compound_S() {
+Node* Syntactic::_Compound_S() {
+    Node* nodent = new NodeNT("_compound_s", Token::_COMPOUND_S);
     if (lexic->Token == Token::INT || lexic->Token == Token::VOID) {
-        Declaration_List();
-        _Compound_S();
+        nodent->push(Declaration_List());
+        nodent->push(_Compound_S());
     } else {
         switch (lexic->Token) {
             case Token::BRACE_O:
@@ -100,252 +124,317 @@ void Syntactic::_Compound_S() {
             case Token::NUMBER:
             case Token::IDENTIFIER:
             case Token::PARENTHESES_O:
-                Statement_List();
-                _Compound_S();
+                nodent->push(Statement_List());
+                nodent->push(_Compound_S());
                 break;
         }
     }
+    return nodent;
 }
 
-void Syntactic::Statement_List() {
+Node* Syntactic::Statement_List() {
+    Node* nodent = new NodeNT("statement_list", Token::STATEMENT_LIST);
     switch (lexic->Token) {
         case Token::BRACE_O:
         case Token::SEMICOLON:
-            Compound_S();
+            nodent->push(Compound_S());
             break;
 
         case Token::IF:
-            Selection_S();
+            nodent->push(Selection_S());
             break;
 
         case Token::WHILE:
         case Token::DO:
         case Token::FOR:
-            Iteration_S();
+            nodent->push(Iteration_S());
             break;
 
         case Token::CONTINUE:
         case Token::BREAK:
         case Token::RETURN:
-            Jump_S();
+            nodent->push(Jump_S());
             break;
 
         case Token::NUMBER:
         case Token::IDENTIFIER:
         case Token::PARENTHESES_O:
-            Expression();
+            nodent->push(Expression());
             break;
 
         default:
             Error();
             break;
     }
+    return nodent;
 }
 
-void Syntactic::Selection_S() {
+Node* Syntactic::Selection_S() {
+    Node* nodent = new NodeNT("selection_s", Token::SELECTION_S);
     Check(Token::IF);
     Check("(");
-    Expression();
+    nodent->push(Expression());
     Check(")");
-    Statement_List();
-    _Selection_S();
+    nodent->push(Statement_List());
+    nodent->push(_Selection_S());
+    return nodent;
 }
 
-void Syntactic::_Selection_S() {
+Node* Syntactic::_Selection_S() {
+    Node* nodent = new NodeNT("_selection_s", Token::_SELECTION_S);
     if ( lexic->Token == Token::ELSE ) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
-        Statement_List();
+        nodent->push(Statement_List());
     }
+    return nodent;
 }
 
-void Syntactic::Iteration_S() {
+Node* Syntactic::Iteration_S() {
+    Node* nodent = new NodeNT("iteration_s", Token::ITERATION_S);
     if ( lexic->Token == Token::WHILE ) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
         Check("(");
-        Expression();
+        nodent->push(Expression());
         Check(")");
-        Statement_List();
+        nodent->push(Statement_List());
     } else if ( lexic->Token == Token::FOR ) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
         Check("(");
-        For_S();
-        For_S();
-        _For_S();
+        nodent->push(For_S());
+        nodent->push(For_S());
+        nodent->push(_For_S());
         Check(")");
-        Statement_List();
+        nodent->push(Statement_List());
     } else if ( lexic->Token == Token::DO ) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
-        Statement_List();
+        nodent->push(Statement_List());
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         Check(Token::WHILE);
         Check("(");
-        Expression();
+        nodent->push(Expression());
         Check(")");
         Check(";");
     } else
         Error();
+    return nodent;
 }
 
-void Syntactic::For_S() {
+Node* Syntactic::For_S() {
+    Node* nodent = new NodeNT("for_s", Token::FOR_S);
     if (lexic->Token == Token::IDENTIFIER ||
         lexic->Token == Token::NUMBER) {
-            Expression_S();
+            nodent->push(Expression_S());
         }
     else
         Check(";");
+    return nodent;
 }
 
-void Syntactic::_For_S() {
+Node* Syntactic::_For_S() {
+    Node* nodent = new NodeNT("_for_s", Token::_FOR_S);
     if (lexic->Token == Token::IDENTIFIER ||
         lexic->Token == Token::NUMBER) {
-            Expression();
+            nodent->push(Expression());
         }
+    return nodent;
 }
 
-void Syntactic::Expression_S() {
-    Expression();
+Node* Syntactic::Expression_S() {
+    Node* nodent = new NodeNT("expression_s", Token::EXPRESSION_S);
+    nodent->push(Expression());
     Check(";");
+    return nodent;
 }
 
-void Syntactic::Expression() {
-    OP();
-    EQ();
+Node* Syntactic::Expression() {
+    Node* nodent = new NodeNT("expression", Token::EXPRESSION);
+    nodent->push(OP());
+    nodent->push(EQ());
+    return nodent;
 }
 
-void Syntactic::EQ() {
+Node* Syntactic::EQ() {
+    Node* nodent = new NodeNT("eq", Token::EQ);
     if (lexic->Token == Token::EQUAL) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
-        OP();
-        EQ();
+        nodent->push(OP());
+        nodent->push(EQ());
     }
+    return nodent;
 }
-void Syntactic::OP() {
-    ROP();
-    _OP();
+Node* Syntactic::OP() {
+    Node* nodent = new NodeNT("op", Token::OP);
+    nodent->push(ROP());
+    nodent->push(_OP());
+    return nodent;
 }
 
-void Syntactic::_OP() {
+Node* Syntactic::_OP() {
+    Node* nodent = new NodeNT("_op", Token::_OP);
     if (lexic->Token == Token::DOUBLE_EQUAL ||
         lexic->Token == Token::NOT_EQUAL) {
+            nodent->push(new NodeT(lexic->Symbol, lexic->Token));
             lexic->Next();
-            ROP();
-            _OP();
+            nodent->push(ROP());
+            nodent->push(_OP());
         }
+    return nodent;
 }
 
-void Syntactic::ROP() {
-    E();
-    _ROP();
+Node* Syntactic::ROP() {
+    Node* nodent = new NodeNT("rop", Token::ROP);
+    nodent->push(E());
+    nodent->push(_ROP());
+    return nodent;
 }
 
-void Syntactic::_ROP() {
+Node* Syntactic::_ROP() {
+    Node* nodent = new NodeNT("_rop", Token::_ROP);
     if (lexic->Token == Token::GREATER ||
         lexic->Token == Token::LESS ||
         lexic->Token == Token::GREATER_OR_EQUAL ||
         lexic->Token == Token::LESS_OR_EQUAL) {
+            nodent->push(new NodeT(lexic->Symbol, lexic->Token));
             lexic->Next();
-            E();
-            _ROP();
+            nodent->push(E());
+            nodent->push(_ROP());
         }
+    return nodent;
 }
 
-void Syntactic::E() {
-    T();
-    _E();
+Node* Syntactic::E() {
+    Node* nodent = new NodeNT("e", Token::E);
+    nodent->push(T());
+    nodent->push(_E());
+    return nodent;
 }
 
-void Syntactic::_E() {
+Node* Syntactic::_E() {
+    Node* nodent = new NodeNT("_e", Token::_E);
     if (lexic->Token == Token::PLUS ||
         lexic->Token == Token::MINUS) {
+             nodent->push(new NodeT(lexic->Symbol, lexic->Token));
              lexic->Next();
-             T();
-             _E();
+             nodent->push(T());
+             nodent->push(_E());
          }
+    return nodent;
 }
 
-void Syntactic::T() {
-    F();
-    _T();
+Node* Syntactic::T() {
+    Node* nodent = new NodeNT("t", Token::T);
+    nodent->push(F());
+    nodent->push(_T());
+    return nodent;
 }
-void Syntactic::_T() {
+Node* Syntactic::_T() {
+    Node* nodent = new NodeNT("_t", Token::_T);
     if (lexic->Token == Token::MULTIPLICATION ||
         lexic->Token == Token::DIVISION ||
         lexic->Token == Token::MODULE) {
+            nodent->push(new NodeT(lexic->Symbol, lexic->Token));
             lexic->Next();
-            F();
-            _T();
+            nodent->push(F());
+            nodent->push(_T());
         }
+    return nodent;
 }
 
-void Syntactic::F() {
+Node* Syntactic::F() {
+    Node* nodent = new NodeNT("f", Token::F);
     if (lexic->Token == Token::IDENTIFIER) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
-        FD();
+        nodent->push(FD());
     } else if (lexic->Token == Token::NUMBER) {
+        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
     } else if (lexic->Token == Token::PARENTHESES_O) {
         lexic->Next();
-        Expression();
+        nodent->push(Expression());
         Check(")");
     } else
         Error();
+    return nodent;
 }
 
-void Syntactic::FD() {
+Node* Syntactic::FD() {
+    Node* nodent = new NodeNT("fd", Token::FD);
     if (lexic->Token == Token::PARENTHESES_O) {
         lexic->Next();
-        F_List();
+        nodent->push(F_List());
         Check(")");
     }
+    return nodent;
 }
 
-void Syntactic::F_List() {
+Node* Syntactic::F_List() {
+    Node* nodent = new NodeNT("f_list", Token::F_LIST);
     if (lexic->Token == Token::NUMBER ||
         lexic->Token == Token::IDENTIFIER ||
         lexic->Token == Token::PARENTHESES_O) {
-            Expression();
-            _F_List();
+            nodent->push(Expression());
+            nodent->push(_F_List());
         }
-
+    return nodent;
 }
 
-void Syntactic::_F_List() {
+Node* Syntactic::_F_List() {
+    Node* nodent = new NodeNT("_f_list", Token::_F_LIST);
     if (lexic->Token == Token::COMMA) {
         lexic->Next();
-        Expression();
-        _F_List();
+        nodent->push(Expression());
+        nodent->push(_F_List());
     }
+    return nodent;
 }
 
-void Syntactic::Jump_S() {
+Node* Syntactic::Jump_S() {
+    Node* nodent = new NodeNT("jump_s", Token::JUMP_S);
     if (lexic->Token == Token::CONTINUE ||
         lexic->Token == Token::BREAK) {
+            nodent->push(new NodeT(lexic->Symbol, lexic->Token));
             lexic->Next();
             Check(";");
         } else if (lexic->Token == Token::RETURN) {
+            nodent->push(new NodeT(lexic->Symbol, lexic->Token));
             lexic->Next();
-            _RR();
+            nodent->push(_RR());
             Check(";");
         } else
             Error();
+    return nodent;
 }
 
-void Syntactic::_RR() {
+Node* Syntactic::_RR() {
+    Node* nodent = new NodeNT("_rr", Token::_RR);
     if (lexic->Token == Token::NUMBER ||
         lexic->Token == Token::IDENTIFIER ||
         lexic->Token == Token::PARENTHESES_O)
-            Expression();
+            nodent->push(Expression());
+    return nodent;
 }
 
-void Syntactic::Declaration_List() {
-    Declarator();
+Node* Syntactic::Declaration_List() {
+    Node* nodent = new NodeNT("declaration_list", Token::DECLARATION_LIST);
+    nodent->push(Declarator());
     Check(";");
+    return nodent;
 }
 
-void Syntactic::Declarator() {
-    Specifier();
+Node* Syntactic::Declarator() {
+    Node* nodent = new NodeNT("declarator", Token::DECLARATOR);
+    nodent->push(Specifier());
+    nodent->push(new NodeT(lexic->Symbol, lexic->Token));
     Check(Token::IDENTIFIER);
-    _Initializer();
-    Initializer();
+    nodent->push(_Initializer());
+    nodent->push(Initializer());
+    return nodent;
 }
 
 void Syntactic::Check(int value) {

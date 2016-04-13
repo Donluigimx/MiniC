@@ -1,48 +1,37 @@
-#ifndef NODE
-#define NODE
+#ifndef NODO
+#define NODO
 
 #include <iostream>
+#include <vector>
+#include <fstream>
 
-class Node{
-  public:
-    std::string Symbol;
-    Node(std::string);
-    Node(){};
+class Node {
+public:
+	std::string symbol;
+	int type;
 
-    virtual void showMustGoOn();
+	Node(std::string str, int t): symbol(str), type(t) { };
+	Node() { };
+	virtual ~Node() { };
+	virtual void print(std::ofstream &of);
+	virtual void push(Node* nd) { };
+private:
 };
 
-class ID: public Node{
-	public:
-	    ID* next;
-	    ID(std::string str) : Node(str){ next = nullptr; };
+class NodeNT: public Node {
+public:
+	NodeNT(std::string str, int t): Node(str,t) { };
+	std::vector<Node*> tree;
+
+    void print(std::ofstream &of);
+	void push(Node* nd) { tree.push_back(nd); };
+private:
 };
 
-class Type: public Node{
-  public:
-    Type(std::string str) : Node(str){};
+class NodeT: public Node {
+public:
+	NodeT(std::string str, int t): Node(str,t) { };
+    void print(std::ofstream &of);
 };
 
-class DefVar: public Node{
-  public:
-    Type* type;
-    ID* id;
-    DefVar(ID*,Type*);
-};
-
-class Expression: public Node {
-    public:
-        Expression(){this->l = nullptr; this->r = nullptr;};
-        Expression *l, *r;
-};
-
-class Value: public Expression {
-    public:
-        Value(std::string str);
-};
-
-class Operator: public Expression {
-    public:
-        Operator(Expression *rv, std::string str);
-};
 #endif

@@ -1,3 +1,5 @@
+#include <iostream>
+#include <fstream>
 #include "lexic.hpp"
 #include "syntactic.hpp"
 
@@ -11,5 +13,7 @@ int main(int argc, char const *argv[])
 
 	Lexic lexic((char*)value);
 	Syntactic syntactic(&lexic);
+	std::ofstream of("output.xml", std::ios_base::out);
+	syntactic.tree->print(of);
 	return 0;
 }
