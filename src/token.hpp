@@ -38,6 +38,7 @@ namespace Token {
     DO,
     RETURN,
     END_OF_FILE,
+	FUNCTION,
     TRANSLATION_UNIT,
     EXTERNAL_DECLARATION,
     SPECIFIER,
