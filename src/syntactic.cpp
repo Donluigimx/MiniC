@@ -10,106 +10,163 @@ void Syntactic::Analize() {
 }
 
 Node* Syntactic::Translation_Unit() {
-    Node* nodent = new NodeNT("translation_unit", Token::TRANSLATION_UNIT);
-    while( lexic->Token != Token::END_OF_FILE)
-        nodent->push(External_Declaration());
+    Program* nodent = new Program();
+    Node* aux = nullptr;
+    while( lexic->Token != Token::END_OF_FILE) {
+		aux = External_Declaration()
+		if (aux != nullptr)
+        	nodent->nodes.push_back(aux);
+	}
     return nodent;
 }
 
 Node* Syntactic::External_Declaration() {
-    Node* nodent = new NodeNT("external_declaration", Token::EXTERNAL_DECLARATION);
-    nodent->push(Specifier());
-    nodent->push(new NodeT(lexic->Symbol,lexic->Token));
+	int type;
+	std::string symbol;
+    Node* nodent = nullptr;
+	DefVar* defv = nullptr;
+	DefFunc* deff = nullptr;
+
+	type = lexic->Token;
+    Specifier();
+    symbol = lexic->Symbol;
     Check(Token::IDENTIFIER);
-    nodent->push(_External_Declaration());
+    nodent = _External_Declaration();
+
+	defv = dynamic_cast<DefVar*>(nodent);
+	deff = dynamic_cast<DefFunc*>(nodent);
+
+	if(defv != nullptr) {
+		defv->type = type;
+		if(defv->values[0].first == "1")
+			defv->values[0].first = symbol;
+	} else if(deff != nullptr) {
+		deff->type = type;
+		deff->symbol = symbol;
+	}
     return nodent;
 }
 
 Node* Syntactic::Specifier() {
-    Node* nodent = new NodeNT("specifier", Token::SPECIFIER);
     if (lexic->Token == Token::INT || lexic->Token == Token::VOID) {
-        nodent->push(new NodeT(lexic->Symbol,lexic->Token));
         lexic->Next();
     } else
         Error();
-    return nodent;
+    return nullptr;
 }
 
 Node* Syntactic::_External_Declaration() {
-    Node* nodent = new NodeNT("_external_declaration", Token::_EXTERNAL_DECLARATION);
+	DefVar* defv = nullptr;
+    DefVar* auxv = nullptr;
+	DefFunc* deff = nullptr;
+	Compound* comp = nullptr;
+	Expression* expr = nullptr;
+	Node* nodent = nullptr;
+
     if (lexic->Token == Token::PARENTHESES_O) {
         lexic->Next();
         if (lexic->Token != Token::PARENTHESES_C)
-            nodent->push(Parameter_List());
+            deff = Parameter_List();
+		else
+			deff = new DefFunc("",0);
         Check(")");
-        nodent->push(Compound_S());
+        comp = Compound_S();
+		deff->compound = comp;
+		nodent = deff;
     } else{
-        nodent->push(_Initializer());
-        nodent->push(Initializer());
+		defv = new DefVar(0);
+        expr = _Initializer();
+        auxv = Initializer();
+		defv->values.push_back(std::pair<std::string, Expression* >("1", expr));
+		if (auxv != nullptr)
+			for(auto it: auxv->values)
+				defv->values.push_back(it);
+		nodent = defv;
     }
     return nodent;
 }
 
-Node* Syntactic::Parameter_List() {
-    Node* nodent = new NodeNT("parameter_list", Token::PARAMETER_LIST);
-    nodent->push(Specifier());
-    nodent->push(new NodeT(lexic->Symbol,lexic->Token));
+DefFunc* Syntactic::Parameter_List() {
+	DefFunc* deff = new DefFunc("",0);
+	DefFunc* auxf = nullptr;
+	int type;
+	type = lexic->Token;
+    Specifier();
+	deff->parameters.push_back(new Parameter(lexic->Symbol, type));
     Check(Token::IDENTIFIER);
-    nodent->push(_Parameter_List());
-    return nodent;
+    auxf = _Parameter_List();
+	if( auxf != nullptr)
+		for(auto it: auxf->parameters)
+			deff->parameters.push_back(it);
+    return deff;
 }
 
 Node* Syntactic::_Parameter_List() {
-    Node* nodent = new NodeNT("_parameter_list", Token::_PARAMETER_LIST);
+    DefFunc* deff = nullptr;
+	DefFunc* auxf = nullptr;
+	int type;
     if (lexic->Token == Token::COMMA) {
+		deff = new DefFunc("",0);
         lexic->Next();
-        nodent->push(Specifier());
-        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
+		type = lexic->Token;
+        Specifier()
+        deff->parameters.push_back(new Parameter(lexic->Symbol, lexic->Token));
         Check(Token::IDENTIFIER);
-        nodent->push(_Parameter_List());
+        auxf = _Parameter_List();
+		if( auxf != nullptr)
+			for(auto it: auxf->parameters)
+				deff->parameters.push_back(it);
     }
-    return nodent;
+    return deff;
 }
 
 Node* Syntactic::Initializer() {
-    Node* nodent = new NodeNT("initializer", Token::INITIALIZER);
+	DefVar* defv = nullptr;
+    DefVar* auxv = nullptr;
+	Expression* expr = nullptr;
+	std::string symbol;
     if (lexic->Token == Token::COMMA) {
+		defv
         lexic->Next();
-        nodent->push(new NodeT(lexic->Symbol,lexic->Token));
+		symbol = lexic->Symbol;
         Check(Token::IDENTIFIER);
-        nodent->push(_Initializer());
-        nodent->push(Initializer());
+        expr = _Initializer()
+        auxv = Initializer();
+		defv->values.push_back(std::pair<std::string, Expression* >(symbol,expr));
+		if (auxv != nullptr)
+			for(auto it: auxv->values)
+				defv->values.push_back(it);
     }
-    return nodent;
+    return defv;
 }
 
 Node* Syntactic::_Initializer() {
-    Node* nodent = new NodeNT("_initializer", Token::_INITIALIZER);
+    Expression* expr = nullptr;
     if (lexic->Token == Token::EQUAL) {
-        nodent->push(new NodeT(lexic->Symbol, lexic->Token));
         lexic->Next();
-        nodent->push(Expression());
+        expr = Expression();
     }
-    return nodent;
+    return expr;
 }
 
 Node* Syntactic::Compound_S() {
-    Node* nodent = new NodeNT("compound_s", Token::COMPOUND_S);
+	Compound* comp = nullptr;
     if (lexic->Token == Token::BRACE_O) {
         lexic->Next();
-        nodent->push(_Compound_S());
+        comp = _Compound_S();
         Check("}");
     } else {
         Check(";");
     }
-    return nodent;
+    return comp;
 }
 
 Node* Syntactic::_Compound_S() {
-    Node* nodent = new NodeNT("_compound_s", Token::_COMPOUND_S);
+    Compound* comp = new Compound();
+	Compound* aux = nullptr;
     if (lexic->Token == Token::INT || lexic->Token == Token::VOID) {
-        nodent->push(Declaration_List());
-        nodent->push(_Compound_S());
+        comp->stmt.push_back(Declaration_List());
+        aux = _Compound_S();
     } else {
         switch (lexic->Token) {
             case Token::BRACE_O:
@@ -124,12 +181,23 @@ Node* Syntactic::_Compound_S() {
             case Token::NUMBER:
             case Token::IDENTIFIER:
             case Token::PARENTHESES_O:
-                nodent->push(Statement_List());
-                nodent->push(_Compound_S());
+                comp->stmt.push_back(Statement_List());
+                aux = _Compound_S();
                 break;
         }
     }
-    return nodent;
+	
+	if(comp->stmt.empty()) {
+		delete comp;
+		comp = nullptr;
+	}
+
+	if(aux != nullptr) {
+		for(auto it: aux->stmt)
+			comp->stmt.push_back(it);
+		delete aux;
+	}
+    return comp;
 }
 
 Node* Syntactic::Statement_List() {

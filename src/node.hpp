@@ -6,6 +6,7 @@
 #include <fstream>
 #include "token.hpp"
 
+//std::map<std::pair<std::string, std::string>, objeto> map;
 class Node {
 private:
 
@@ -20,6 +21,14 @@ public:
 	virtual void push(Node* nd) { };
 };
 
+class Parameter: public Node {
+private:
+
+public:
+	Parameter (std::string s, int t): Node(s,t) { };
+	virtual ~Parameter ();
+};
+
 class Expression: public Node {
 private:
 
@@ -27,14 +36,14 @@ public:
 	Expression *r, *l;
 	Expression(std::string s, int t): Node(s,t) { this-> r = this-> l = nullptr; };
 	virtual ~Expression() { };
-}
+};
 
 class Add: public Expression {
 private:
 
 public:
 	Add (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
-	virtual ~Add ();
+	virtual ~Add () { };
 };
 
 class Mul: public Expression {
@@ -42,7 +51,7 @@ private:
 
 public:
 	Mul (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
-	virtual ~Mul ();
+	virtual ~Mul () { };
 };
 
 class Comp: public Expression {
@@ -50,7 +59,7 @@ private:
 
 public:
 	Comp (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
-	virtual ~Comp ();
+	virtual ~Comp () { };
 };
 
 class Assign: public Expression {
@@ -58,26 +67,16 @@ private:
 
 public:
 	Assign (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
-	virtual ~Assign ();
+	virtual ~Assign ()  ;
 };
 
 class DefVar: public Node {
 private:
 
 public:
-	std::vector< std::pair < Id*, Expression* > > values;
+	std::vector< std::pair < std::string, Expression* > > values;
 	DefVar (int t) { this->type = t; this->symbol = ""; };
-	virtual ~DefVar ();
-};
-
-class DefFunc: public Node {
-private:
-
-public:
-	Compound* compound;
-	std::vector< std::pair < type, ID* > > parameters;
-	DefFunc (std::string s, int t) Node(s,t);
-	virtual ~DefFunc ();
+	virtual ~DefVar () { };
 };
 
 class Compound: public Node {
@@ -86,7 +85,17 @@ private:
 public:
 	std::vector< Node* > stmt;
 	Compound ();
-	virtual ~Compound ();
+	virtual ~Compound () { };
+};
+
+class DefFunc: public Node {
+private:
+
+public:
+	Compound* compound;
+	std::vector< Parameter* > parameters;
+	DefFunc (std::string s, int t) Node(s,t);
+	virtual ~DefFunc () { };
 };
 
 class If: public Node {
@@ -94,16 +103,49 @@ private:
 
 public:
 	Expression* exp;
-	Compound* comp;
-	std::vector< Else* > v;
+	Node* statement;
+	std::vector< Else* > els;
 	If ();
-	virtual ~If ();
-
+	virtual ~If () { };
 };
-class NodeT: public Node {
+
+class Else: public Node {
+private:
+
 public:
-	NodeT(std::string str, int t): Node(str,t) { };
-    void print(std::ofstream &of);
+	Node* statement;
+	std::vector< Else* > els;
+	Else ();
+	virtual ~Else () { };
 };
 
+class Iterator: public Node {
+private:
+
+public:
+	Node* statement;
+	std::vector< Expression* > lexpr;
+	Iterator (std::string s, int t, Node* n, std::vector< Expression > v):
+						Node(s,t) { this->statement = n; this->lexpr = v; };
+	virtual ~Iterator() { };
+};
+
+class Jump: public Node {
+private:
+
+public:
+	Jump (std::string s, int t): Node(s,t) { };
+	virtual ~Jump ();
+
+};
+
+class Program: public Node {
+private:
+
+public:
+	std::vector<Node* > nodes;
+	Program ();
+	virtual ~Program ();
+
+};
 #endif

@@ -25,8 +25,8 @@ class Syntactic {
     Node* External_Declaration();
     Node* _External_Declaration();
     Node* Specifier();
-    Node* Parameter_List();
-    Node* _Parameter_List();
+    DefFunc* Parameter_List();
+    DefFunc* _Parameter_List();
     Node* Compound_S();
     Node* _Compound_S();
     Node* Initializer();
