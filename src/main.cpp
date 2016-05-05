@@ -6,7 +6,7 @@
 int main(int argc, char const *argv[])
 {
 	const char* value = NULL;
-	
+
 	if(argc == 2) {
 		value = argv[1];
 	}
@@ -15,5 +15,7 @@ int main(int argc, char const *argv[])
 	Syntactic syntactic(&lexic);
 	std::ofstream of("output.xml", std::ios_base::out);
 	syntactic.tree->print(of);
+	std::cout << "/* message */" << std::endl;
+	of.close();
 	return 0;
 }
