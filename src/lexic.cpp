@@ -234,7 +234,7 @@ void Lexic::Next() {
 	}
 
 	this->Token = aux.first;
-	std::cout << Symbol << " " << Token << std::endl;
+	//std::cout << Symbol << " " << Token << std::endl;
 }
 
 void Lexic::Error() {

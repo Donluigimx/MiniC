@@ -4,21 +4,38 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <map>
 #include "token.hpp"
 
 //std::map<std::pair<std::string, std::string>, objeto> map;
+class SymbolDef {
+private:
+
+public:
+	int dataType;
+	int type;
+	bool isDef;
+	std::vector<std::string> parameters;
+
+	SymbolDef() { };
+	virtual ~SymbolDef() { };
+};
+
 class Node {
 private:
 
 public:
 	std::string symbol;
 	int type;
+	static std::map<std::pair<std::string, std::string>, SymbolDef> symtable;
+	static std::string context;
+	static bool isOk;
 
 	Node(std::string str, int t): symbol(str), type(t) { };
 	Node() { };
 	virtual ~Node() { };
 	virtual void print(std::ofstream &of);
-	//virtual void push(Node* nd) { };
+	virtual void analysis() { std::cout << "FATAL ERROR" << std::endl; Node::isOk = false; };
 };
 
 class Parameter: public Node {
@@ -28,6 +45,7 @@ public:
 	Parameter (std::string s, int t): Node(s,t) { };
 	virtual ~Parameter () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Expression: public Node {
@@ -35,9 +53,11 @@ private:
 
 public:
 	Expression *r, *l;
+	char dataType;
 	Expression(std::string s, int t): Node(s,t) { this-> r = this-> l = nullptr; };
 	virtual ~Expression() { };
 	void print(std::ofstream &of);
+	void analysis() { std::cout << "FATAL ERROR" << std::endl; Expression::isOk = false; };
 };
 
 class Add: public Expression {
@@ -47,6 +67,7 @@ public:
 	Add (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
 	virtual ~Add () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Mul: public Expression {
@@ -56,6 +77,7 @@ public:
 	Mul (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
 	virtual ~Mul () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Comp: public Expression {
@@ -65,6 +87,7 @@ public:
 	Comp (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
 	virtual ~Comp () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Assign: public Expression {
@@ -74,6 +97,7 @@ public:
 	Assign (Expression *rv, std::string s, int t): Expression(s,t) { this->r = rv; };
 	virtual ~Assign () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Id: public Expression {
@@ -83,6 +107,7 @@ public:
 	Id (std::string s, int t): Expression(s,t) {  };
 	virtual ~Id ()  { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Value: public Expression {
@@ -92,6 +117,7 @@ public:
 	Value (std::string s, int t): Expression(s,t) {  };
 	virtual ~Value () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class FuncCall: public Expression {
@@ -102,6 +128,7 @@ public:
 	FuncCall (): Expression("",Token::FD) { };
 	virtual ~FuncCall () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class DefVar: public Node {
@@ -112,6 +139,7 @@ public:
 	DefVar (int t) { this->type = t; this->symbol = ""; };
 	virtual ~DefVar () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Compound: public Node {
@@ -122,6 +150,7 @@ public:
 	Compound () { };
 	virtual ~Compound () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class DefFunc: public Node {
@@ -133,6 +162,7 @@ public:
 	DefFunc (std::string s, int t): Node(s,t) { };
 	virtual ~DefFunc () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Else: public Node {
@@ -144,6 +174,7 @@ public:
 	Else ();
 	virtual ~Else () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class If: public Node {
@@ -156,6 +187,7 @@ public:
 	If () { };
 	virtual ~If () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Iterator: public Node {
@@ -168,6 +200,7 @@ public:
 						Node(s,t) { this->statement = nullptr; };
 	virtual ~Iterator() { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Jump: public Node {
@@ -178,6 +211,7 @@ public:
 	Jump (std::string s, int t): Node(s,t) { this->exp = nullptr; };
 	virtual ~Jump () { };
 	void print(std::ofstream &of);
+	void analysis();
 };
 
 class Program: public Node {
@@ -188,7 +222,7 @@ public:
 	Program () { };
 	virtual ~Program () { };
 	void print(std::ofstream &of);
-
+	void analysis();
 };
 
 #endif

@@ -111,7 +111,7 @@ DefFunc* Syntactic::_Parameter_List() {
         lexic->Next();
 		type = lexic->Token;
         Specifier();
-        deff->parameters.push_back(new Parameter(lexic->Symbol, lexic->Token));
+        deff->parameters.push_back(new Parameter(lexic->Symbol, type));
         Check(Token::IDENTIFIER);
         auxf = _Parameter_List();
 		if( auxf != nullptr)
@@ -536,7 +536,7 @@ Expression* Syntactic::F() {
 			aux->type = auxt;
 			nodent = aux;
 		} else {
-			nodent = new Value(auxs, auxt);
+			nodent = new Id(auxs, auxt);
 		}
     } else if (lexic->Token == Token::NUMBER) {
         nodent = new Value(lexic->Symbol, lexic->Token);
@@ -558,6 +558,11 @@ FuncCall* Syntactic::FD() {
         lexic->Next();
         auxc = F_List();
         Check(")");
+		if (auxc != nullptr) {
+			for (auto it: auxc->values)
+				funcc->values.push_back(it);
+			delete auxc;
+		}
     }
     return funcc;
 }
