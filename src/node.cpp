@@ -4,6 +4,8 @@
 std::string Node::context = "";
 bool Node::isOk = true;
 std::map<std::pair<std::string, std::string>, SymbolDef> Node::symtable;
+std::map<std::string,int> regval;
+std::vector<std::string> regpass;
 
 int charType(char c) {
 	if (c == 'i')
@@ -14,6 +16,15 @@ int charType(char c) {
 	return -1;
 }
 
+void init() {
+	regpass.push_back(" ");
+	regpass.push_back("%edi");
+	regpass.push_back("%esi");
+	regpass.push_back("%edx");
+	regpass.push_back("%ecx");
+	regpass.push_back("%r8d");
+	regpass.push_back("%r9d");
+}
 void Node::print(std::ofstream &of) {
 	if(of.is_open()) {
 		std::cout << "FATAL ERROR"  << std::endl;
@@ -471,6 +482,45 @@ void DefFunc::analysis() {
 	DefFunc::context = "";
 }
 
+void DefFunc::code(std::ofstream &of) {
+	int c = 1;
+	int rest = 0;
+	if (this->compound == nullptr)
+		return;
+
+	for (auto it: this->parameters) {
+		regval.insert(std::pair<std::string, int>(it->symbol,c));
+		c++;
+	}
+
+	for (auto it: DefFunc::symtable) {
+		if (it.first.second == this->symbol) {
+			if (it.second.type != Token::PARAMETER) {
+				regval.insert(std::pair<std::string, int>(it.first.first,c));
+				c++;
+			}
+		}
+	}
+
+	of << ".global " << this->symbol << "\n";
+	of << ".type " << this->symbol << " ,@function\n";
+	of << this->symbol << ":\n";
+	of << "pushq %rbp\n";
+	of << "movq %rsp %rbp\n";
+	rest = (regval.size()*4)+8;
+	rest = rest + (rest%8);
+	of << "subq $" << rest << " %rsp\n";
+
+	for (auto it: this->parameters) {
+		int i = regval.find(it->symbol)->second;
+		of << "movl " << regpass[i] << " " << i*-4 << "(%rbp)\n";
+	}
+
+	of << ";\n;\n";
+	of << "popq %rbp\nleave\nret\n\n";
+	regval.clear();
+}
+
 void If::print(std::ofstream &of) {
 	if(of.is_open()) {
 		of << "<If>\n";
@@ -602,5 +652,13 @@ void Program::analysis() {
 			std::cout << "Error on definition of " << val.first.first << std::endl;
 			Program::isOk = false;
 		}
+	}
+}
+
+void Program::code(std::ofstream &of) {
+	of << ".text\n";
+	init();
+	for (auto it: this->nodes) {
+		it->code(of);
 	}
 }

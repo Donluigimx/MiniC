@@ -15,7 +15,8 @@ int main(int argc, char const *argv[])
 	Syntactic syntactic(&lexic);
 	std::ofstream of("output", std::ios_base::out);
 	syntactic.tree->analysis();
-	of << Node::isOk << std::endl;
+	if (Node::isOk)
+		syntactic.tree->code(of);
 	for (auto it: Node::symtable) {
 		std::cout << it.first.first << "\t|";
 		std::cout << it.first.second << "\t|";
@@ -23,6 +24,7 @@ int main(int argc, char const *argv[])
 		std::cout << it.second.type << "\t|";
 		std::cout << it.second.isDef << std::endl;
 	}
+
 	of.close();
 	return 0;
 }
