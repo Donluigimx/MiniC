@@ -33,7 +33,6 @@ Node* Syntactic::External_Declaration() {
     symbol = lexic->Symbol;
     Check(Token::IDENTIFIER);
     nodent = _External_Declaration();
-
 	defv = dynamic_cast<DefVar*>(nodent);
 	deff = dynamic_cast<DefFunc*>(nodent);
 
@@ -83,6 +82,7 @@ Node* Syntactic::_External_Declaration() {
 			for(auto it: auxv->values)
 				defv->values.push_back(it);
 		nodent = defv;
+		Check(";");
     }
     return nodent;
 }
@@ -669,5 +669,6 @@ void Syntactic::Check(std::string value) {
 
 void Syntactic::Error() {
     std::cout << "ERROR IN SYNTACTIC PHASE" << std::endl;
+	std::cout << "Error near \"" << lexic->Symbol << "\".\n";
     exit(0);
 }

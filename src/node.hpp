@@ -71,7 +71,7 @@ public:
 	virtual ~Add () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Mul: public Expression {
@@ -82,7 +82,7 @@ public:
 	virtual ~Mul () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Comp: public Expression {
@@ -93,7 +93,7 @@ public:
 	virtual ~Comp () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Assign: public Expression {
@@ -104,7 +104,7 @@ public:
 	virtual ~Assign () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Id: public Expression {
@@ -115,7 +115,7 @@ public:
 	virtual ~Id ()  { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Value: public Expression {
@@ -126,7 +126,7 @@ public:
 	virtual ~Value () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class FuncCall: public Expression {
@@ -138,7 +138,7 @@ public:
 	virtual ~FuncCall () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class DefVar: public Node {
@@ -150,7 +150,7 @@ public:
 	virtual ~DefVar () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Compound: public Node {
@@ -162,7 +162,7 @@ public:
 	virtual ~Compound () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class DefFunc: public Node {
@@ -188,7 +188,7 @@ public:
 	virtual ~Else () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class If: public Node {
@@ -202,7 +202,7 @@ public:
 	virtual ~If () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Iterator: public Node {
@@ -216,7 +216,7 @@ public:
 	virtual ~Iterator() { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Jump: public Node {
@@ -228,7 +228,7 @@ public:
 	virtual ~Jump () { };
 	void print(std::ofstream &of);
 	void analysis();
-	void code(std::ofstream &of) { };
+	void code(std::ofstream &of);
 };
 
 class Program: public Node {

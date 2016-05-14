@@ -1,3 +1,5 @@
+int bbb;
+
 void funcion_v_v () {
 	int x;
 
@@ -31,19 +33,22 @@ int funcion_i_v () {
 int funcion_i_void () {
 	int d;
 
+	return d;
 	d = 60;
 }
 
 int funcion_i_i (int x) {
 	int e;
 
-	e = 70;
+	e = 70 + 322 - 123123 * 332;
 }
 
 int funcion_i_ii (int x, int y);
 
 int main() {
 	int a;
+	a = 2312;
+	bbb = a;
 	funcion_i_ii(a,a);
 }
 

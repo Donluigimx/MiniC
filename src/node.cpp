@@ -3,9 +3,24 @@
 
 std::string Node::context = "";
 bool Node::isOk = true;
+
+bool ret = false;
+bool isBucle = false;
+int funcType = 0;
+
 std::map<std::pair<std::string, std::string>, SymbolDef> Node::symtable;
 std::map<std::string,int> regval;
 std::vector<std::string> regpass;
+std::vector<std::string> regpassr;
+std::map<std::string,std::string> regglo;
+
+int ttrue = 0;
+int ffalse = 0;
+int iff = 0;
+int wwhile = 0;
+int bbgin = 0;
+int bbreak = 0;
+int eend = 0;
 
 int charType(char c) {
 	if (c == 'i')
@@ -24,7 +39,21 @@ void init() {
 	regpass.push_back("%ecx");
 	regpass.push_back("%r8d");
 	regpass.push_back("%r9d");
+
+	regpassr.push_back(" ");
+	regpassr.push_back("%rdi");
+	regpassr.push_back("%rsi");
+	regpassr.push_back("%rdx");
+	regpassr.push_back("%rcx");
+	regpassr.push_back("%r8d");
+	regpassr.push_back("%r9d");
+	for (auto a: Node::symtable) {
+		if (a.first.second == "" && a.second.type == Token::IDENTIFIER) {
+			regglo.insert(std::pair<std::string, std::string>(a.first.first,a.first.first+"(%rip)"));
+		}
+	}
 }
+
 void Node::print(std::ofstream &of) {
 	if(of.is_open()) {
 		std::cout << "FATAL ERROR"  << std::endl;
@@ -105,6 +134,22 @@ void Mul::analysis() {
 	}
 }
 
+void Mul::code(std::ofstream &of) {
+	if (this->r != nullptr)
+		this->r->code(of);
+	of << "pushq %rbx\nmovl %eax, %ebx\n";
+	if (this->l != nullptr)
+		this->l->code(of);
+	if (this->symbol == "*")
+		of << "mull %ebx\n";
+	else if (this->symbol == "/" || this->symbol == "%") {
+		of << "movl $0, %edx\ndivl %ebx\n";
+		if (this->symbol == "%")
+			of << "movl %edx, %eax\n";
+	}
+	of << "popq %rbx\n";
+}
+
 void Add::print(std::ofstream &of) {
 	if(of.is_open()) {
 		of << "<Add value=\"" << this->symbol << "\">\n";
@@ -137,6 +182,20 @@ void Add::analysis() {
 		std::cout << ", an expression inside does not have the same data type." << std::endl;
 		Add::isOk = false;
 	}
+}
+
+void Add::code(std::ofstream &of) {
+	if (this->r != nullptr)
+		this->r->code(of);
+	of << "pushq %rbx\nmovl %eax, %ebx\n";
+	if (this->l != nullptr)
+		this->l->code(of);
+	if (this->symbol == "+")
+		of << "addl %ebx, %eax\n";
+	else if (this->symbol == "-") {
+		of << "subl %ebx, %eax\n";
+	}
+	of << "popq %rbx\n";
 }
 
 void Comp::print(std::ofstream &of) {
@@ -181,6 +240,36 @@ void Comp::analysis() {
 	}
 }
 
+void Comp::code(std::ofstream &of) {
+	int t = ttrue++;
+	int f = ffalse++;
+	std::string sym = "";
+	if (this->symbol == "<")
+		sym = "jl";
+	else if (this->symbol == "<=")
+		sym = "jle";
+	else if (this->symbol == ">")
+		sym = "jg";
+	else if (this->symbol == ">=")
+		sym = "jge";
+	else if (this->symbol == "==")
+		sym = "je";
+	else if (this->symbol == "!=")
+		sym = "jne";
+
+	if (this->r != nullptr)
+		this->r->code(of);
+	of << "pushq %rbx\nmovl %eax, %ebx\n";
+	if (this->l != nullptr)
+		this->l->code(of);
+
+	of << "cmpl %ebx, %eax\n";
+	of << sym << " TRUE_" << t << "\n";
+	of << "movl $0, %eax\njmp FALSE_" << f << "\n";
+	of << "TRUE_" << t << ":\n";
+	of << "movl $1, %eax\nFALSE_" << f << ":\n";
+}
+
 void Assign::print(std::ofstream &of) {
 	if(of.is_open()) {
 		of << "<Assign value=\"" << this->symbol << "\">\n";
@@ -215,6 +304,16 @@ void Assign::analysis() {
 	}
 }
 
+void Assign::code(std::ofstream &of) {
+	if (this->r != nullptr)
+		this->r->code(of);
+	auto it = regglo.find(this->l->symbol);
+	if (it != regglo.end())
+		of << "movl %eax, " << it->second << "\n";
+	else
+		of << "movl %eax, -" << regval.find(this->l->symbol)->second*4 << "(%rbp)\n";
+}
+
 void Id::print(std::ofstream &of) {
 	if(of.is_open()) {
 		of << "<Id>\n";
@@ -239,14 +338,39 @@ void Id::analysis() {
 		} else if (it->second.dataType == Token::VOID) {
 			this->dataType = 'v';
 		} else {
+			std::cout << "Error in " << Node::context;
+			std::cout << ", " << this->symbol << " is not defined in this context." << std::endl;
+			Id::isOk = false;
 			this->dataType = 'e';
 		}
 	} else {
-		std::cout << "Error in " << Node::context;
-		std::cout << ", " << this->symbol << " is not defined in this context." << std::endl;
-		Id::isOk = false;
-		this->dataType = 'e';
+		it = Id::symtable.find(std::pair<std::string, std::string>(this->symbol, ""));
+		if (it != Id::symtable.end()) {
+			if (it->second.dataType == Token::INT) {
+				this->dataType = 'i';
+			} else if (it->second.dataType == Token::VOID) {
+				this->dataType = 'v';
+			} else {
+				std::cout << "Error in " << Node::context;
+				std::cout << ", " << this->symbol << " is not defined in this context." << std::endl;
+				Id::isOk = false;
+				this->dataType = 'e';
+			}
+		} else {
+			std::cout << "Error in " << Node::context;
+			std::cout << ", " << this->symbol << " is not defined in this context." << std::endl;
+			Id::isOk = false;
+			this->dataType = 'e';
+		}
 	}
+}
+
+void Id::code(std::ofstream &of) {
+	auto it = regglo.find(this->symbol);
+	if (it != regglo.end())
+		of << "movl " << it->second << ", %eax\n";
+	else
+		of << "movl -" << regval.find(this->symbol)->second*4 << "(%rbp), %eax \n";
 }
 
 void Value::print(std::ofstream &of) {
@@ -267,6 +391,10 @@ void Value::print(std::ofstream &of) {
 
 void Value::analysis() {
 	this->dataType = 'i';
+}
+
+void Value::code(std::ofstream &of) {
+	of << "movl $" << this->symbol << ", %eax\n";
 }
 
 void FuncCall::print(std::ofstream &of) {
@@ -338,6 +466,21 @@ void FuncCall::analysis() {
 	}
 }
 
+void FuncCall::code(std::ofstream &of) {
+	int size = this->values.size();
+
+	for (int i = 0; i < size; i++) {
+		this->values[i]->code(of);
+		of << "pushq " << regpassr[i+1] << "\n";
+		of << "movl %eax, " << regpass[i+1] << "\n";
+	}
+	of << "call " << this->symbol << "\n";
+
+	for (int i = size; i > 0; i--) {
+		of << "popq " << regpassr[i] << "\n";
+	}
+}
+
 void DefVar::print(std::ofstream &of) {
 	std::string sym;
 	if(this->type == Token::INT)
@@ -378,6 +521,21 @@ void DefVar::analysis() {
 	}
 }
 
+void DefVar::code(std::ofstream &of) {
+	if (DefVar::context == "") {
+		for (auto it: this->values) {
+			of << ".comm " << it.first << ",4,4\n";
+		}
+	} else {
+		for (auto it: this->values) {
+			if (it.second != nullptr) {
+				it.second->code(of);
+				of << "movl %eax, -" << regval.find(it.first)->second*4 << "(%rbp)\n";
+			}
+		}
+	}
+}
+
 void Compound::print(std::ofstream &of) {
 	if(of.is_open()) {
 		of << "<Compound>\n";
@@ -397,6 +555,13 @@ void Compound::analysis() {
 	for (auto i: this->stmt) {
 		if (i != nullptr)
 			i->analysis();
+	}
+}
+
+void Compound::code(std::ofstream &of) {
+	for (auto it: this->stmt) {
+		if (it != nullptr)
+			it->code(of);
 	}
 }
 
@@ -449,7 +614,9 @@ void DefFunc::analysis() {
 						break;
 					}
 				}
-				if (DefFunc::isOk && this->compound != nullptr) {
+				if (this->compound != nullptr) {
+					funcType = this->type;
+					ret = false;
 					this->compound->analysis();
 					it->second.isDef = true;
 				} else {
@@ -471,8 +638,13 @@ void DefFunc::analysis() {
 			sym.parameters.push_back(iti->symbol);
 		}
 		if (this->compound != nullptr) {
+			funcType = this->type;
+			ret = false;
 			this->compound->analysis();
 			sym.isDef = true;
+			if (funcType == Token::INT && !ret) {
+				std::cout << DefFunc::context << " function return is not defined.\n-int return expected." << std::endl;
+			}
 		} else {
 			sym.isDef = false;
 		}
@@ -485,8 +657,11 @@ void DefFunc::analysis() {
 void DefFunc::code(std::ofstream &of) {
 	int c = 1;
 	int rest = 0;
+	int e = eend++;
 	if (this->compound == nullptr)
 		return;
+
+	DefFunc::context = this->symbol;
 
 	for (auto it: this->parameters) {
 		regval.insert(std::pair<std::string, int>(it->symbol,c));
@@ -506,18 +681,20 @@ void DefFunc::code(std::ofstream &of) {
 	of << ".type " << this->symbol << " ,@function\n";
 	of << this->symbol << ":\n";
 	of << "pushq %rbp\n";
-	of << "movq %rsp %rbp\n";
+	of << "movq %rsp, %rbp\n";
 	rest = (regval.size()*4)+8;
 	rest = rest + (rest%8);
-	of << "subq $" << rest << " %rsp\n";
+	of << "subq $" << rest << ", %rsp\n";
 
 	for (auto it: this->parameters) {
 		int i = regval.find(it->symbol)->second;
-		of << "movl " << regpass[i] << " " << i*-4 << "(%rbp)\n";
+		of << "movl " << regpass[i] << ", " << i*-4 << "(%rbp)\n";
 	}
-
-	of << ";\n;\n";
-	of << "popq %rbp\nleave\nret\n\n";
+	this->compound->code(of);
+	//of << ";\n;\n";
+	of << "ENDFUNC_" << e << ":\n";
+	of << "leave\nret\n\n";
+	DefFunc::context = "";
 	regval.clear();
 }
 
@@ -553,6 +730,17 @@ void If::analysis() {
 		it->analysis();
 }
 
+void If::code(std::ofstream &of) {
+	int ii = iff++;
+	this->exp->code(of);
+	of << "cmp $0, %eax\nje IF_" << ii << "\n";
+	if (this->statement != nullptr)
+		this->statement->code(of);
+	of << "IF_" << ii << ":\n";
+	for (auto it: this->els)
+		it->code(of);
+}
+
 void Else::print(std::ofstream &of) {
 	if(of.is_open()) {
 		of << "<Else>\n";
@@ -577,6 +765,10 @@ void Else::analysis() {
 		this->statement->analysis();
 }
 
+void Else::code(std::ofstream &of) {
+	this->statement->code(of);
+}
+
 void Iterator::print(std::ofstream &of) {
 	if(of.is_open()) {
 		of << "<Iterator type=\"" << this->symbol << "\">\n";
@@ -596,11 +788,44 @@ void Iterator::print(std::ofstream &of) {
 }
 
 void Iterator::analysis() {
+	isBucle = true;
 	for (auto it: this->lexpr)
 		if (it != nullptr)
 			it->analysis();
 	if (this->statement != nullptr)
 		this->statement->analysis();
+	isBucle = false;
+}
+
+void Iterator::code(std::ofstream &of) {
+	int w = wwhile++;
+	int b = bbgin++;
+	int bb = bbreak++;
+	if (this->symbol == "for") {
+		if (this->lexpr[0] != nullptr)
+			this->lexpr[0]->code(of);
+	}
+	if (this->symbol == "while" || this->symbol == "for") {
+		of << "jmp WHILE_" << w << "\n";
+	}
+	of << "BEGIN_" << b << ":\n";
+	this->statement->code(of);
+	if (this->symbol == "for") {
+		if (this->lexpr[2] != nullptr)
+			this->lexpr[2]->code(of);
+	}
+	of << "WHILE_" << w << ":\n";
+	if (this->symbol == "for") {
+		if (this->lexpr[1] != nullptr)
+			this->lexpr[1]->code(of);
+		else
+			of << "movl $1, %eax\n";
+	} else {
+		if (this->lexpr[0] != nullptr)
+			this->lexpr[0]->code(of);
+	}
+	of << "cmp $1, %eax\nje BEGIN_" << b << "\n";
+	of << "BREAK_" << bb << ":\n";
 }
 
 void Jump::print(std::ofstream &of) {
@@ -618,8 +843,43 @@ void Jump::print(std::ofstream &of) {
 }
 
 void Jump::analysis() {
+	//std::cout << this->symbol << std::endl;
+	if (!isBucle) {
+		if (this->type == Token::BREAK || this->type == Token::CONTINUE) {
+			std::cout << this->symbol << " is not inside of an iterator" << std::endl;
+			Jump::isOk = false;
+		} else {
+			if (ret) {
+				std::cout << "return already defined in " << Jump::context << std::endl;
+			} else {
+				if (funcType == Token::INT) {
+					if (this->exp == nullptr) {
+						std::cout << Jump::context << " function needs an integer return." << std::endl;
+						Jump::isOk = false;
+					}
+				} else {
+					if (this->exp != nullptr) {
+						std::cout << Jump::context << " function returns void." << std::endl;
+					}
+				}
+			}
+		}
+	}
 	if (this->exp != nullptr)
 		this->exp->analysis();
+}
+
+void Jump::code(std::ofstream &of) {
+	if (this->symbol == "break")
+		of << "jmp BREAK_" << bbreak-1 << "\n";
+	else if (this->symbol == "continue")
+		of << "jmp WHILE_" << wwhile-1 << "\n";
+	else if (this->symbol == "return") {
+		if (this->exp != nullptr) {
+			this->exp->code(of);
+		}
+		of << "jmp ENDFUNC_" << eend - 1 << "\n";
+	}
 }
 
 void Program::print(std::ofstream &of) {
