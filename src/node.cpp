@@ -855,7 +855,6 @@ void Jump::analysis() {
 				if (funcType == Token::INT) {
 					if (this->exp == nullptr) {
 						std::cout << Jump::context << " function needs an integer return." << std::endl;
-						Jump::isOk = false;
 					}
 				} else {
 					if (this->exp != nullptr) {
@@ -863,6 +862,7 @@ void Jump::analysis() {
 					}
 				}
 			}
+			ret = true;
 		}
 	}
 	if (this->exp != nullptr)
